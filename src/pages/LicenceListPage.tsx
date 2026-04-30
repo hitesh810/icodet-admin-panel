@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import AppLayout from "../layouts/AppLayout";
 import { API } from "../services/api";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const LicenceListPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+
+  const schoolId = queryParams.get("school_id");
   const [data, setData] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -13,7 +19,7 @@ const LicenceListPage = () => {
   const fetchLicences = async () => {
     try {
       const res = await API.get(
-        `/admin/licences?page=${page}&limit=${limit}&search=${search}`
+        `/admin/licences?page=${page}&limit=${limit}&search=${search}&school_id=${schoolId || ""}`
       );
 
       setData(res.data.data.licences);
@@ -52,6 +58,12 @@ const LicenceListPage = () => {
           <h1 className="text-2xl font-semibold">
             Licence Management
           </h1>
+          <button
+            onClick={() => navigate("/licences/create")}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+          >
+            + Create Licence
+          </button>
         </div>
 
         {/* SEARCH */}
@@ -98,9 +110,8 @@ const LicenceListPage = () => {
               {data.map((item, index) => (
                 <tr
                   key={item.id}
-                  className={`border-t ${
-                    index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  } hover:bg-blue-50 transition`}
+                  className={`border-t ${index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                    } hover:bg-blue-50 transition`}
                 >
                   <td className="p-3">{item.id}</td>
 
@@ -123,11 +134,10 @@ const LicenceListPage = () => {
                   {/* STATUS */}
                   <td className="p-3">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        item.status === "ACTIVE"
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${item.status === "ACTIVE"
                           ? "bg-green-100 text-green-700"
                           : "bg-red-100 text-red-700"
-                      }`}
+                        }`}
                     >
                       {item.status}
                     </span>
@@ -137,11 +147,10 @@ const LicenceListPage = () => {
                   <td className="p-3 text-center">
                     <button
                       onClick={() => handleToggle(item)}
-                      className={`px-4 py-1 rounded-lg text-white text-xs ${
-                        item.status === "ACTIVE"
+                      className={`px-4 py-1 rounded-lg text-white text-xs ${item.status === "ACTIVE"
                           ? "bg-red-500 hover:bg-red-600"
                           : "bg-green-600 hover:bg-green-700"
-                      }`}
+                        }`}
                     >
                       {item.status === "ACTIVE"
                         ? "Deactivate"

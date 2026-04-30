@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
 import { API } from "../services/api";
+import BulkUploadSection from "../components/BulkUploadSection";
 
 const CreateLicencePage = () => {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<"single" | "bulk">("single");
 
   const [schools, setSchools] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
@@ -83,11 +85,47 @@ const CreateLicencePage = () => {
 
   return (
     <AppLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
 
+       <div style={{ padding: "20px" }}>
         <h1 className="text-2xl font-semibold">
           Create Licence
         </h1>
+
+      {/* 🔥 TABS */}
+      <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+        <button
+          onClick={() => setActiveTab("single")}
+          style={{
+            padding: "8px 16px",
+            background: activeTab === "single" ? "#007bff" : "#ddd",
+            color: activeTab === "single" ? "#fff" : "#000",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+          }}
+        >
+          Single Licence
+        </button>
+
+        <button
+          onClick={() => setActiveTab("bulk")}
+          style={{
+            padding: "8px 16px",
+            background: activeTab === "bulk" ? "#007bff" : "#ddd",
+            color: activeTab === "bulk" ? "#fff" : "#000",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+          }}
+        >
+          Bulk Upload
+        </button>
+      </div>
+
+      {/* 🔥 SINGLE FORM (UNCHANGED) */}
+      {activeTab === "single" && (
+        <div>
+      <div className="max-w-2xl mx-auto space-y-6">
 
         <div className="bg-white p-6 rounded shadow space-y-4">
 
@@ -204,6 +242,13 @@ const CreateLicencePage = () => {
         </div>
 
       </div>
+        </div>
+      )}
+
+      {/* 🔥 BULK SECTION */}
+      {activeTab === "bulk" && <BulkUploadSection />}
+    </div>
+
     </AppLayout>
   );
 };

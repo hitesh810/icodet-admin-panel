@@ -46,7 +46,7 @@ const QuestionBank = () => {
     setChapters([]);
 
     API
-      .get(`/api/admin/chapters?volume_id=${volumeId}`)
+      .get(`/admin/chapters?volume_id=${volumeId}`)
       .then((res) => setChapters(res.data.data));
   }, [volumeId]);
 
