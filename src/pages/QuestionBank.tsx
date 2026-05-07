@@ -7,26 +7,26 @@ import { API } from "../services/api";
 const QuestionBank = () => {
   const [data, setData] = useState<any>(null);
 
-  const [classes, setClasses] = useState<any[]>([]);
+  // const [classes, setClasses] = useState<any[]>([]);
   const [volumes, setVolumes] = useState<any[]>([]);
   const [chapters, setChapters] = useState<any[]>([]);
 
-  const [classId, setClassId] = useState<number | null>(null);
+  // const [classId, setClassId] = useState<number | null>(null);
   const [volumeId, setVolumeId] = useState<number | null>(null);
   const [chapterId, setChapterId] = useState<number | null>(null);
+  const [chapterName, setChapterName] = useState<string>("");
 
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // 🔥 FETCH CLASSES
-  useEffect(() => {
-    API.get("/admin/classes").then((res) => {
-      setClasses(res.data.data);
-    });
-  }, []);
+  // // 🔥 FETCH CLASSES
+  // useEffect(() => {
+  //   API.get("/admin/classes").then((res) => {
+  //     setClasses(res.data.data);
+  //   });
+  // }, []);
 
   // 🔥 FETCH VOLUMES (on class change)
   useEffect(() => {
-    if (!classId) return;
 
     setVolumeId(null);
     setChapterId(null);
@@ -34,9 +34,9 @@ const QuestionBank = () => {
     setChapters([]);
 
     API
-      .get(`/admin/volumes?class_id=${classId}`)
+      .get(`/admin/volumes`)
       .then((res) => setVolumes(res.data.data));
-  }, [classId]);
+  }, []);
 
   // 🔥 FETCH CHAPTERS (on volume change)
   useEffect(() => {
@@ -82,17 +82,18 @@ const QuestionBank = () => {
 
   // 💾 SAVE / UPDATE
   const handleSave = async () => {
-    if (!chapterId) {
-      alert("Select chapter first");
-      return;
-    }
-
-    if (!data?.topics) {
-      alert("No data to save");
-      return;
-    }
 
     if (isEditMode) {
+      if (!chapterId) {
+        alert("Select chapter first");
+        return;
+      }
+
+      if (!data?.topics) {
+        alert("No data to save");
+        return;
+      }
+
       await API.put("/question-bank/update", {
         chapter_id: chapterId,
         topics: data.topics,
@@ -101,7 +102,8 @@ const QuestionBank = () => {
       alert("Updated successfully ✅");
     } else {
       await API.post("/question-bank/save", {
-        chapter_id: chapterId,
+        volumeId: volumeId,
+        chapterName: chapterName,
         topics: data.topics,
       });
 
@@ -140,7 +142,7 @@ const QuestionBank = () => {
         <div className="bg-white p-4 rounded-xl shadow flex gap-4">
 
           {/* CLASS */}
-          <select
+          {/* <select
             className="border px-3 py-2 rounded-md"
             value={classId || ""}
             onChange={(e) => setClassId(Number(e.target.value))}
@@ -151,14 +153,13 @@ const QuestionBank = () => {
                 {c.name}
               </option>
             ))}
-          </select>
+          </select> */}
 
           {/* VOLUME */}
           <select
             className="border px-3 py-2 rounded-md"
             value={volumeId || ""}
             onChange={(e) => setVolumeId(Number(e.target.value))}
-            disabled={!classId}
           >
             <option value="">Select Volume</option>
             {volumes.map((v) => (
@@ -169,7 +170,7 @@ const QuestionBank = () => {
           </select>
 
           {/* CHAPTER */}
-          <select
+          {isEditMode ? <select
             className="border px-3 py-2 rounded-md"
             value={chapterId || ""}
             onChange={(e) => setChapterId(Number(e.target.value))}
@@ -181,7 +182,21 @@ const QuestionBank = () => {
                 {ch.name}
               </option>
             ))}
-          </select>
+          </select> : <div style={{ marginBottom: "10px" }}>
+            <label>Chapter Name:</label>
+            <input
+              type="text"
+              value={chapterName}
+              onChange={(e) => setChapterName(e.target.value)}
+              placeholder="Enter chapter name"
+              style={{
+                marginLeft: "10px",
+                padding: "6px",
+                borderRadius: "5px",
+                border: "1px solid #ccc"
+              }}
+            />
+          </div>}
 
         </div>
 
