@@ -78,9 +78,13 @@ const TopicCard = ({ topic, onChange }: any) => {
             <QuestionCard
               question={q}
               onChange={(updatedQ: any) => {
-                const newTopic = { ...topic };
-                newTopic.questions[i] = updatedQ;
-                onChange(newTopic);
+                const updatedQuestions = [...topic.questions];
+                updatedQuestions[i] = updatedQ;
+
+                onChange({
+                  ...topic,
+                  questions: updatedQuestions,
+                });
               }}
             />
 

@@ -81,68 +81,106 @@ const QuestionBank = () => {
   };
 
   // 💾 SAVE / UPDATE
-  const handleSave = async () => {
-
-    if (isEditMode) {
-      if (!chapterId) {
-        alert("Select chapter first");
-        return;
-      }
-
-      if (!data?.topics) {
-        alert("No data to save");
-        return;
-      }
-
-      await API.put("/question-bank/update", {
-        chapter_id: chapterId,
-        topics: data.topics,
-      });
-
-      alert("Updated successfully ✅");
-    } else {
-      await API.post("/question-bank/save", {
-        volumeId: volumeId,
-        chapterName: chapterName,
-        topics: data.topics,
-      });
-
-      alert("Saved successfully ✅");
-      setIsEditMode(true);
+ const handleSave = async () => {
+console.log("FINAL OPTIONS:", data.topics);
+  if (isEditMode) {
+    if (!chapterId) {
+      alert("Select chapter first");
+      return;
     }
-  };
 
-  return (
-    <AppLayout>
-      <div className="space-y-6">
+    if (!data?.topics) {
+      alert("No data to save");
+      return;
+    }
 
-        {/* HEADER */}
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold">Question Bank</h1>
+    await API.put("/question-bank/update", {
+      chapter_id: chapterId,
+      topics: data.topics,
+    });
 
-          <div className="flex items-center gap-4">
-            {data && (
-              <div className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
-                📊 {getTotalQuestions()} Questions
-              </div>
-            )}
+    alert("Updated successfully ✅");
 
-            {data && (
-              <button
-                onClick={handleSave}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg"
-              >
-                {isEditMode ? "Update" : "Save"}
-              </button>
-            )}
+  } else {
+
+    const formData = new FormData();
+
+    formData.append("volumeId", String(volumeId || ""));
+    formData.append("chapterName", chapterName || "");
+    formData.append("topics", JSON.stringify(data.topics));
+
+    console.log("🔥 START FILE EXTRACTION");
+
+    data.topics.forEach((topic: any, ti: number) => {
+      topic.questions.forEach((q: any, qi: number) => {
+
+        if (q.type === "IMAGE") {
+
+          q.options.forEach((opt: any, oi: number) => {
+
+            console.log(`CHECK FILE [${ti}-${qi}-${oi}]:`, opt.file);
+
+            if (opt.file instanceof File) {
+              console.log("✅ ADDING FILE:", opt.file.name);
+              formData.append("images", opt.file);
+            } else {
+              console.log("❌ NO FILE FOUND");
+            }
+
+          });
+
+        }
+
+      });
+    });
+
+    // 🔥 FORM DATA DEBUG
+    console.log("🔥 FORM DATA CONTENT");
+   Array.from(formData.entries()).forEach((pair) => {
+  console.log("FORM DATA:", pair[0], pair[1]);
+});
+
+    await API.post("/question-bank/save", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    alert("Saved successfully ✅");
+    setIsEditMode(true);
+  }
+};
+    return (
+      <AppLayout>
+        <div className="space-y-6">
+
+          {/* HEADER */}
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-semibold">Question Bank</h1>
+
+            <div className="flex items-center gap-4">
+              {data && (
+                <div className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
+                  📊 {getTotalQuestions()} Questions
+                </div>
+              )}
+
+              {data && (
+                <button
+                  onClick={handleSave}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg"
+                >
+                  {isEditMode ? "Update" : "Save"}
+                </button>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* 🔥 DEPENDENT DROPDOWN */}
-        <div className="bg-white p-4 rounded-xl shadow flex gap-4">
+          {/* 🔥 DEPENDENT DROPDOWN */}
+          <div className="bg-white p-4 rounded-xl shadow flex gap-4">
 
-          {/* CLASS */}
-          {/* <select
+            {/* CLASS */}
+            {/* <select
             className="border px-3 py-2 rounded-md"
             value={classId || ""}
             onChange={(e) => setClassId(Number(e.target.value))}
@@ -155,82 +193,82 @@ const QuestionBank = () => {
             ))}
           </select> */}
 
-          {/* VOLUME */}
-          <select
-            className="border px-3 py-2 rounded-md"
-            value={volumeId || ""}
-            onChange={(e) => setVolumeId(Number(e.target.value))}
-          >
-            <option value="">Select Volume</option>
-            {volumes.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.name}
-              </option>
-            ))}
-          </select>
+            {/* VOLUME */}
+            <select
+              className="border px-3 py-2 rounded-md"
+              value={volumeId || ""}
+              onChange={(e) => setVolumeId(Number(e.target.value))}
+            >
+              <option value="">Select Volume</option>
+              {volumes.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
 
-          {/* CHAPTER */}
-          {isEditMode ? <select
-            className="border px-3 py-2 rounded-md"
-            value={chapterId || ""}
-            onChange={(e) => setChapterId(Number(e.target.value))}
-            disabled={!volumeId}
-          >
-            <option value="">Select Chapter</option>
-            {chapters.map((ch) => (
-              <option key={ch.id} value={ch.id}>
-                {ch.name}
-              </option>
-            ))}
-          </select> : <div style={{ marginBottom: "10px" }}>
-            <label>Chapter Name:</label>
-            <input
-              type="text"
-              value={chapterName}
-              onChange={(e) => setChapterName(e.target.value)}
-              placeholder="Enter chapter name"
-              style={{
-                marginLeft: "10px",
-                padding: "6px",
-                borderRadius: "5px",
-                border: "1px solid #ccc"
+            {/* CHAPTER */}
+            {isEditMode ? <select
+              className="border px-3 py-2 rounded-md"
+              value={chapterId || ""}
+              onChange={(e) => setChapterId(Number(e.target.value))}
+              disabled={!volumeId}
+            >
+              <option value="">Select Chapter</option>
+              {chapters.map((ch) => (
+                <option key={ch.id} value={ch.id}>
+                  {ch.name}
+                </option>
+              ))}
+            </select> : <div style={{ marginBottom: "10px" }}>
+              <label>Chapter Name:</label>
+              <input
+                type="text"
+                value={chapterName}
+                onChange={(e) => setChapterName(e.target.value)}
+                placeholder="Enter chapter name"
+                style={{
+                  marginLeft: "10px",
+                  padding: "6px",
+                  borderRadius: "5px",
+                  border: "1px solid #ccc"
+                }}
+              />
+            </div>}
+
+          </div>
+
+          {/* 📤 Upload */}
+          <div className="bg-white p-4 rounded-xl shadow">
+            <UploadYaml
+              setData={(newData: any) => {
+                if (data && isEditMode) {
+                  const confirm = window.confirm(
+                    "Overwrite existing data?"
+                  );
+                  if (!confirm) return;
+                }
+                setData(newData);
               }}
             />
-          </div>}
+          </div>
+
+          {/* 📚 Topics */}
+          {data?.topics?.map((topic: any, i: number) => (
+            <TopicCard
+              key={i}
+              topic={topic}
+              onChange={(updatedTopic: any) => {
+                const newData = { ...data };
+                newData.topics[i] = updatedTopic;
+                setData(newData);
+              }}
+            />
+          ))}
 
         </div>
+      </AppLayout>
+    );
+  };
 
-        {/* 📤 Upload */}
-        <div className="bg-white p-4 rounded-xl shadow">
-          <UploadYaml
-            setData={(newData: any) => {
-              if (data && isEditMode) {
-                const confirm = window.confirm(
-                  "Overwrite existing data?"
-                );
-                if (!confirm) return;
-              }
-              setData(newData);
-            }}
-          />
-        </div>
-
-        {/* 📚 Topics */}
-        {data?.topics?.map((topic: any, i: number) => (
-          <TopicCard
-            key={i}
-            topic={topic}
-            onChange={(updatedTopic: any) => {
-              const newData = { ...data };
-              newData.topics[i] = updatedTopic;
-              setData(newData);
-            }}
-          />
-        ))}
-
-      </div>
-    </AppLayout>
-  );
-};
-
-export default QuestionBank;
+  export default QuestionBank;
