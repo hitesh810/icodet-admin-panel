@@ -35,7 +35,7 @@ const Sidebar = ({ collapsed }: { collapsed: boolean }) => {
             },
             {
                 name: "Question Bank",
-                path: "/question-bank",
+                path: "/question-bank-list",
                 icon: KeySquare,
             },
             {

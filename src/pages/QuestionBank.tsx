@@ -3,8 +3,14 @@ import AppLayout from "../layouts/AppLayout";
 import UploadYaml from "../components/UploadYaml";
 import TopicCard from "../components/TopicCard";
 import { API } from "../services/api";
+import { useLocation } from "react-router-dom";
 
 const QuestionBank = () => {
+
+  const location = useLocation();
+
+
+  const [mode, setMode] = useState<"create" | "edit">("create");
   const [data, setData] = useState<any>(null);
 
   // const [classes, setClasses] = useState<any[]>([]);
@@ -18,14 +24,7 @@ const QuestionBank = () => {
 
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // // 🔥 FETCH CLASSES
-  // useEffect(() => {
-  //   API.get("/admin/classes").then((res) => {
-  //     setClasses(res.data.data);
-  //   });
-  // }, []);
-
-  // 🔥 FETCH VOLUMES (on class change)
+  
   useEffect(() => {
 
     setVolumeId(null);
@@ -37,12 +36,58 @@ const QuestionBank = () => {
       .get(`/admin/volumes`)
       .then((res) => setVolumes(res.data.data));
   }, []);
+  useEffect(() => {
+    if (location.state?.mode === "edit") {
+      setMode("edit");
+      setChapterId(location.state.chapterId);
+      setVolumeId(location.state.volumeId);
+    }
+
+    if (location.state?.mode === "create") {
+      setMode("create");
+      setData(null);
+      setIsEditMode(false);
+    }
+  }, []);
+
+  //ye Add KR
+  useEffect(() => {
+    if (location.state?.mode === "edit") {
+      setMode("edit");
+
+      const id = location.state.chapterId;
+
+      if (id) {
+        setChapterId(id);
+
+        // 🔥 DIRECT API CALL
+        API.get(`/question-bank?chapter_id=${id}`)
+          .then((res) => {
+            console.log("API DATA:", res.data.data);
+
+            setData({ topics: res.data.data });
+            setIsEditMode(true);
+          })
+          .catch(() => {
+            setData(null);
+            setIsEditMode(false);
+          });
+      }
+    }
+
+    if (location.state?.mode === "create") {
+      setMode("create");
+      setData(null);
+      setIsEditMode(false);
+    }
+  }, []);
 
   // 🔥 FETCH CHAPTERS (on volume change)
   useEffect(() => {
-    if (!volumeId) return;
 
-    setChapterId(null);
+    if (!volumeId ) return;
+
+    // setChapterId(null);
     setChapters([]);
 
     API
@@ -50,26 +95,6 @@ const QuestionBank = () => {
       .then((res) => setChapters(res.data.data));
   }, [volumeId]);
 
-  // 🔥 LOAD QUESTION BANK (on chapter change)
-  useEffect(() => {
-    if (!chapterId) return;
-
-    API
-      .get(`/question-bank?chapter_id=${chapterId}`)
-      .then((res) => {
-        if (res.data.data.length > 0) {
-          setData({ topics: res.data.data });
-          setIsEditMode(true);
-        } else {
-          setData(null);
-          setIsEditMode(false);
-        }
-      })
-      .catch(() => {
-        setData(null);
-        setIsEditMode(false);
-      });
-  }, [chapterId]);
 
   // 🔥 COUNT
   const getTotalQuestions = () => {
@@ -81,164 +106,153 @@ const QuestionBank = () => {
   };
 
   // 💾 SAVE / UPDATE
- const handleSave = async () => {
-console.log("FINAL OPTIONS:", data.topics);
-  if (isEditMode) {
-    if (!chapterId) {
-      alert("Select chapter first");
-      return;
-    }
+  const handleSave = async () => {
+    console.log("FINAL OPTIONS:", data.topics);
+    if (isEditMode) {
+      if (!chapterId) {
+        alert("Select chapter first");
+        return;
+      }
 
-    if (!data?.topics) {
-      alert("No data to save");
-      return;
-    }
+      if (!data?.topics) {
+        alert("No data to save");
+        return;
+      }
 
-    await API.put("/question-bank/update", {
-      chapter_id: chapterId,
-      topics: data.topics,
-    });
-
-    alert("Updated successfully ✅");
-
-  } else {
-
-    const formData = new FormData();
-
-    formData.append("volumeId", String(volumeId || ""));
-    formData.append("chapterName", chapterName || "");
-    formData.append("topics", JSON.stringify(data.topics));
-
-    console.log("🔥 START FILE EXTRACTION");
-
-    data.topics.forEach((topic: any, ti: number) => {
-      topic.questions.forEach((q: any, qi: number) => {
-
-        if (q.type === "IMAGE") {
-
-          q.options.forEach((opt: any, oi: number) => {
-
-            console.log(`CHECK FILE [${ti}-${qi}-${oi}]:`, opt.file);
-
-            if (opt.file instanceof File) {
-              console.log("✅ ADDING FILE:", opt.file.name);
-              formData.append("images", opt.file);
-            } else {
-              console.log("❌ NO FILE FOUND");
-            }
-
-          });
-
-        }
-
+      await API.put("/question-bank/update", {
+        chapter_id: chapterId,
+        topics: data.topics,
       });
-    });
 
-    // 🔥 FORM DATA DEBUG
-    console.log("🔥 FORM DATA CONTENT");
-   Array.from(formData.entries()).forEach((pair) => {
-  console.log("FORM DATA:", pair[0], pair[1]);
-});
+      alert("Updated successfully ✅");
 
-    await API.post("/question-bank/save", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    } else {
 
-    alert("Saved successfully ✅");
-    setIsEditMode(true);
-  }
-};
-    return (
-      <AppLayout>
-        <div className="space-y-6">
+      const formData = new FormData();
 
-          {/* HEADER */}
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-semibold">Question Bank</h1>
+      formData.append("volumeId", String(volumeId || ""));
+      formData.append("chapterName", chapterName || "");
+      formData.append("topics", JSON.stringify(data.topics));
 
-            <div className="flex items-center gap-4">
-              {data && (
-                <div className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
-                  📊 {getTotalQuestions()} Questions
-                </div>
-              )}
+      console.log("🔥 START FILE EXTRACTION");
 
-              {data && (
-                <button
-                  onClick={handleSave}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg"
-                >
-                  {isEditMode ? "Update" : "Save"}
-                </button>
-              )}
-            </div>
+      data.topics.forEach((topic: any, ti: number) => {
+        topic.questions.forEach((q: any, qi: number) => {
+
+          if (q.type === "IMAGE") {
+
+            q.options.forEach((opt: any, oi: number) => {
+
+              console.log(`CHECK FILE [${ti}-${qi}-${oi}]:`, opt.file);
+
+              if (opt.file instanceof File) {
+                console.log("✅ ADDING FILE:", opt.file.name);
+                formData.append("images", opt.file);
+              } else {
+                console.log("❌ NO FILE FOUND");
+              }
+
+            });
+
+          }
+
+        });
+      });
+
+      // 🔥 FORM DATA DEBUG
+      console.log("🔥 FORM DATA CONTENT");
+      Array.from(formData.entries()).forEach((pair) => {
+        console.log("FORM DATA:", pair[0], pair[1]);
+      });
+
+      await API.post("/question-bank/save", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      alert("Saved successfully ✅");
+      setIsEditMode(true);
+    }
+  };
+  return (
+    <AppLayout>
+      <div className="space-y-6">
+
+        {/* HEADER */}
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-semibold">Question Bank</h1>
+
+          <div className="flex items-center gap-4">
+            {data && (
+              <div className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
+                📊 {getTotalQuestions()} Questions
+              </div>
+            )}
+
+            {data && (
+              <button
+                onClick={handleSave}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg"
+              >
+                {isEditMode ? "Update" : "Save"}
+              </button>
+            )}
           </div>
+        </div>
 
-          {/* 🔥 DEPENDENT DROPDOWN */}
-          <div className="bg-white p-4 rounded-xl shadow flex gap-4">
+        {/* 🔥 DEPENDENT DROPDOWN */}
+        <div className="bg-white p-4 rounded-xl shadow flex gap-4">
 
-            {/* CLASS */}
-            {/* <select
+          {/* VOLUME */}
+          <select
             className="border px-3 py-2 rounded-md"
-            value={classId || ""}
-            onChange={(e) => setClassId(Number(e.target.value))}
+            value={volumeId || ""}
+            disabled={isEditMode}   // 🔥 add this
+            onChange={(e) => setVolumeId(Number(e.target.value))}
           >
-            <option value="">Select Class</option>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
+            <option value="">Select Volume</option>
+            {volumes.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name}
               </option>
             ))}
-          </select> */}
+          </select>
 
-            {/* VOLUME */}
-            <select
-              className="border px-3 py-2 rounded-md"
-              value={volumeId || ""}
-              onChange={(e) => setVolumeId(Number(e.target.value))}
-            >
-              <option value="">Select Volume</option>
-              {volumes.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
+          {/* CHAPTER */}
+          {isEditMode ? <select
+            className="border px-3 py-2 rounded-md"
+            value={chapterId || ""}
+            onChange={(e) => setChapterId(Number(e.target.value))}
+            disabled={isEditMode}
 
-            {/* CHAPTER */}
-            {isEditMode ? <select
-              className="border px-3 py-2 rounded-md"
-              value={chapterId || ""}
-              onChange={(e) => setChapterId(Number(e.target.value))}
-              disabled={!volumeId}
-            >
-              <option value="">Select Chapter</option>
-              {chapters.map((ch) => (
-                <option key={ch.id} value={ch.id}>
-                  {ch.name}
-                </option>
-              ))}
-            </select> : <div style={{ marginBottom: "10px" }}>
-              <label>Chapter Name:</label>
-              <input
-                type="text"
-                value={chapterName}
-                onChange={(e) => setChapterName(e.target.value)}
-                placeholder="Enter chapter name"
-                style={{
-                  marginLeft: "10px",
-                  padding: "6px",
-                  borderRadius: "5px",
-                  border: "1px solid #ccc"
-                }}
-              />
-            </div>}
+          >
+            <option value="">Select Chapter</option>
+            {chapters.map((ch) => (
+              <option key={ch.id} value={ch.id}>
+                {ch.name}
+              </option>
+            ))}
+          </select> : <div style={{ marginBottom: "10px" }}>
+            <label>Chapter Name:</label>
+            <input
+              type="text"
+              value={chapterName}
+              onChange={(e) => setChapterName(e.target.value)}
+              placeholder="Enter chapter name"
+              style={{
+                marginLeft: "10px",
+                padding: "6px",
+                borderRadius: "5px",
+                border: "1px solid #ccc"
+              }}
+            />
+          </div>}
 
-          </div>
+        </div>
 
-          {/* 📤 Upload */}
+        {/* 📤 Upload */}
+        {!isEditMode && (
           <div className="bg-white p-4 rounded-xl shadow">
             <UploadYaml
               setData={(newData: any) => {
@@ -251,24 +265,54 @@ console.log("FINAL OPTIONS:", data.topics);
                 setData(newData);
               }}
             />
+            <button
+              onClick={() => {
+                setData({
+                  topics: [
+                    {
+                      name: "New Topic",
+                      questions: [
+                        {
+                          question_text: "",
+                          type: "MCQ",
+                          options: [
+                            { text: "", is_correct: false },
+                            { text: "", is_correct: false },
+                          ],
+                          answers: [],
+                          pairs: [],
+                          hint: "",
+                        },
+                      ],
+                    },
+                  ],
+                });
+              }}
+              className="bg-blue-600 text-white px-4 py-2 rounded mt-3"
+            >
+              + Add Question
+            </button>
           </div>
 
-          {/* 📚 Topics */}
-          {data?.topics?.map((topic: any, i: number) => (
-            <TopicCard
-              key={i}
-              topic={topic}
-              onChange={(updatedTopic: any) => {
-                const newData = { ...data };
-                newData.topics[i] = updatedTopic;
-                setData(newData);
-              }}
-            />
-          ))}
+        )}
 
-        </div>
-      </AppLayout>
-    );
-  };
 
-  export default QuestionBank;
+        {/* 📚 Topics */}
+        {data?.topics?.map((topic: any, i: number) => (
+          <TopicCard
+            key={i}
+            topic={topic}
+            onChange={(updatedTopic: any) => {
+              const newData = { ...data };
+              newData.topics[i] = updatedTopic;
+              setData(newData);
+            }}
+          />
+        ))}
+
+      </div>
+    </AppLayout>
+  );
+};
+
+export default QuestionBank;

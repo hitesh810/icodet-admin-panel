@@ -10,6 +10,7 @@ export const useAuth = () => {
 
     const token = res.data.data.token;
     const role = res.data.data.user.role;
+  localStorage.setItem("role", role);
 
     context.login(token, role);
   };

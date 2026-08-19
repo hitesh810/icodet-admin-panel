@@ -280,7 +280,12 @@ const QuestionCard = ({ question, onChange }: any) => {
               {(opt.file || opt.preview || opt.image?.startsWith("http")) ? (
                 <>
                   <img
-                    src={opt.file ? URL.createObjectURL(opt.file) : opt.preview || opt.image}
+                    // src={opt.file ? URL.createObjectURL(opt.file) : opt.preview || opt.image}
+                    src={
+                      opt.file instanceof File
+                        ? URL.createObjectURL(opt.file)
+                        : opt.image
+                    }
                     width={60}
                     style={{ border: "1px solid #ccc", borderRadius: 6 }}
                   />
@@ -346,7 +351,7 @@ const QuestionCard = ({ question, onChange }: any) => {
 
                   onChange({
                     ...question,
-                    options: updated.map((o:any) => ({
+                    options: updated.map((o: any) => ({
                       image: o.file?.name || o.preview || o.image,
                       file: o.file,
                       is_correct: o.is_correct,

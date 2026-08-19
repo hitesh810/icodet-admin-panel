@@ -14,6 +14,7 @@ import VolumePage from "../pages/VolumePage";
 import LicenceListPage from "../pages/LicenceListPage";
 import CreateLicencePage from "../pages/CreateLicencePage";
 import BulkUploadSchoolPage from "../pages/BulkUploadSchoolPage";
+import QuestionBankList from "../pages/QuestionBankList";
 
 const AppRoutes = () => {
   return (
@@ -32,8 +33,9 @@ const AppRoutes = () => {
       <Route path="/schools" element={<SchoolListPage />} />
       <Route path="/schools/create" element={<SchoolCreatePage />} />
       <Route path="/licences/create" element={<CreateLicencePage />} />
-      <Route path="/question-bank" element={<QuestionBank />} />
+      <Route path="/question-bank" element={<QuestionBank />} /> 
       <Route path="/class-volume" element={<ClassVolumePage />} />
+      <Route path="/question-bank-list" element={<QuestionBankList />} />
       <Route
         path="/volumes/edit/:classId"
         element={<EditVolumePage />}
